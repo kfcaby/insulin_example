@@ -1,0 +1,111 @@
+---
+title: "Example of Insulin Curves"
+author: "Kevin Cummiskey"
+date: "3/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+The following code imports data from the study "Macronutrients and Body Fat Accumulation: A Mechanistic Feeding Study" publicly available at https://osf.io/m6v73/.  
+
+The data files are:
+
+* fb4_use.csv
+
+* fs2_use.csv
+
+See the website for a data dictionary.  The data files contain 37 variables on each subject (demographics, biomarkers, etc.).
+
+### Import the data
+
+```{r}
+library(tidyverse)
+library(knitr)
+
+#import fb4_use.csv and fs2_use.csv
+data1 <- read_csv("https://osf.io/rmpnw/download", col_names = TRUE)
+data2 <- read_csv("https://osf.io/qcwft/download", col_names = TRUE)
+
+data <- rbind(data1, data2)
+
+names(data)
+```
+
+The subjects were randomized to three test diets:
+
+* Hypocaloric Very-Low-Carbohydrate (VLC)
+
+* High Carbohydrate-Low Sugar (HC-LS)
+
+*  High Carbohydrate-High Sugar (HC-HS)
+
+```{r}
+#add subject's treatment group information
+subject_info <- read_csv("https://osf.io/3ctnm/download",
+                         col_names = TRUE)
+subject_info <- subject_info %>% 
+  select(randomization, subjectid) %>%
+  distinct()
+  
+data <- data %>% left_join(subject_info,
+                           by = c("studyid" = "subjectid"))
+#remove subjects not randomized; convert to factor variable
+data <- data %>% 
+  filter(!is.na(randomization)) %>% 
+  mutate(randomization = factor(randomization))
+```
+
+### Convert to tidy format for analysis
+
+```{r}
+#extract just the insulin measurements and convert to long format
+data_BSL <- data %>% 
+  select(studyid, randomization, starts_with("BSL")) %>% 
+  select(-BSL_HOMA_IR) %>% 
+  pivot_longer(cols = -c(studyid, randomization), 
+               names_to = "time(min)", 
+               values_to = "BSL_insulin")
+
+#extract the time of the measurement (minutes)
+#convert N/A (baselines) to zero
+data_BSL <- data_BSL %>% 
+  mutate(`time(min)` = str_extract(`time(min)`,"\\d+")) %>% 
+  mutate(`time(min)` = as.integer(`time(min)`)) %>% 
+  mutate(`time(min)` = replace_na(`time(min)`, 0)) 
+
+data_BSL %>% 
+  head(10) %>% 
+  kable(caption = "First 10 rows of the data")
+
+#save both wide and long formats
+#data_BSL %>% 
+#  write_csv("./output/BSL_insulin_long.csv")
+
+#data %>% 
+#  write_csv("./output/BSL_insulin_wide.csv")
+
+```
+
+### Plot the insulin curves
+
+```{r}
+data_BSL %>% 
+  ggplot(aes(x = `time(min)`, 
+             y = BSL_insulin, 
+             group = studyid,
+             color = randomization)) +
+  labs(y = "OGTT insulin (uIU/mL)",
+       color = "treatment group") +
+  geom_line()
+```
+
+
+### Future Work
+
+* fit models to each curve, extract parameters
+
+* use parameters in follow-on analyses (for example, are the treatments, covariates, or outcomes related to the parameters.)
+
