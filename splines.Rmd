@@ -1,0 +1,34 @@
+---
+title: "splines_for_glucose"
+author: "Kevin Cummiskey"
+date: "4/22/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+# read in the data
+library(tidyverse)
+
+curves <- read_csv("./data/BG_curves_data.csv")
+
+
+
+curves_long <-  curves %>% 
+  select(1:22) %>% 
+  pivot_longer(cols = 3:22,
+               names_to = "minutes",
+               values_to = "value") %>% 
+  mutate(minutes = as.integer(minutes))
+
+curves_long %>% 
+  ggplot(aes(x = minutes, y = value, group = Participant)) + 
+  geom_smooth(se = FALSE) +
+  facet_wrap(~type_curve)
+
+```

@@ -1,0 +1,104 @@
+---
+title: "Glucose and Insulin Curves"
+author: "Kevin Cummiskey"
+date: "4/21/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(GGally)
+library(plotly)
+
+curves <- read_csv(file = "./data/BG Data Glucose Insulin and Demographics.csv")
+```
+
+# Outlier Detection
+
+```{r}
+
+curves %>% 
+  select(-`SS ID`) %>% 
+  select(-(9:16)) %>% 
+  ggpairs()
+
+```
+
+We removed the following observations:
+
+* 2008-1295-32-liquid-2 - extreme inflection point
+
+* 2009-1295-66-liquid-2 - extreme rate of decay
+
+```{r}
+
+curves_clean <- curves %>% 
+  filter(`Inflection Point Insulin` < 400)
+
+curves_clean <- curves_clean %>% 
+  filter(`Rate of Decay` > -10)
+
+```
+
+
+# Insulin
+
+```{r, fig.width=10}
+
+
+p1 <- curves_clean %>% 
+  select(-`SS ID`) %>% 
+  select(-(9:16)) %>% 
+  select(-gt_state) %>% 
+  ggpairs()
+
+p1
+
+```
+
+
+## Comparing insulin AUC to curve features for predicting BMI
+
+```{r}
+modelAUC <- lm(bmi ~ `AUC at 180 mins Insulin`, data = curves_clean)
+summary(modelAUC)
+
+modelCurve <- lm(bmi ~ `Initial Speed Insulin` + `Time of Max Insulin` + `Maximum Value Insulin` + `Time of Inflection Insulin` + `Inflection Point Insulin` + `Rate of Decay Insulin`, data = curves_clean)
+summary(modelCurve)
+```
+
+
+# Glucose
+
+We have one curve ()
+
+
+```{r}
+
+curves_clean %>% 
+  select(-`SS ID`) %>% 
+  select(-(1:8)) %>% 
+  select(-gt_state) %>% 
+  ggpairs()
+
+```
+
+
+## Comparing glocuse AUC to curve features for predicting BMI
+
+```{r}
+modelAUC <- lm(bmi ~ `AUC at 180 mins`, data = curves_clean)
+summary(modelAUC)
+
+modelCurve <- lm(bmi ~ `Initial Speed  Glucose` + `Time of Max` + `Maximum Value` + `Time of Inflection` + `Inflection Point` + `Rate of Decay`, data = curves_clean)
+summary(modelCurve)
+
+```
+
+
+
+
