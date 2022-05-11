@@ -1,17 +1,9 @@
----
-title: "splines_for_glucose"
-author: "Kevin Cummiskey"
-date: "4/22/2022"
-output: github_document
----
+splines\_for\_glucose
+================
+Kevin Cummiskey
+4/22/2022
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
-```
-
-
-
-```{r}
+``` r
 # read in the data
 library(tidyverse)
 library(broom)
@@ -32,12 +24,13 @@ curves_long %>%
   geom_smooth(se = FALSE) +
   facet_wrap(~type_curve) +
   labs(title = "Glucose and Insulin curves for subjects following a mixed meal tolerance test (n = 198)")
-
 ```
 
-Let's look at a couple of curves.
+![](splines_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
-```{r}
+Let’s look at a couple of curves.
+
+``` r
 sample <- curves_long %>% 
   select(Participant) %>% 
   distinct() %>% 
@@ -50,13 +43,13 @@ curves_long %>%
   geom_point() +
   geom_smooth(se = FALSE) +
   facet_wrap(Participant ~ type_curve, ncol = 2)
-
 ```
 
+![](splines_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 Try splines on one curve
 
-```{r}
+``` r
 patient84 <- curves_long %>% 
   filter(Participant == "2009-1295-84-liquid-2") %>% 
   filter(type_curve == "insulin") %>% 
@@ -68,3 +61,5 @@ smooth.spline(patient84$minutes, patient84$value, df =12 ) %>%
   geom_point(aes(y = y)) + 
   geom_line(aes(y = .fitted)) 
 ```
+
+![](splines_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
